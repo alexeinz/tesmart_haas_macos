@@ -1,12 +1,12 @@
 {
   "domain": "tesmart_matrix",
-  "name": "TESMart LAN Matrix",
-  "documentation": "https://github.com/lululombard/tesmart-lan-homeassistant",
-  "issue_tracker": "https://github.com/lululombard/tesmart-lan-homeassistant/issues",
+  "name": "Tesmart Home Assistant Integration",
+  "documentation": "https://gitlab-jp.ispace-inc.com/ground/tesmart_control",
+  "issue_tracker": "https://gitlab-jp.ispace-inc.com/ground/tesmart_control",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "config_flow": true,
-  "codeowners": ["@lululombard"],
+  "codeowners": ["@alexeinz"],
   "requirements": []
 }

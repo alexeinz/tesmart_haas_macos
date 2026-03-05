@@ -1,7 +1,7 @@
 {
-  "name": "TESMart LAN Matrix",
+  "name": "Tesmart Home Assistant Integration",
   "hacs": "1.6.0",
   "domains": ["tesmart_matrix"],
-  "iot_class": "Local Polling",
+  "iot_class": "local_polling",
   "homeassistant": "0.118.0"
 }
