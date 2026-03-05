@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add TESMart LAN Matrix",
+        "description": "Configure a TESMart matrix switch over TCP.",
+        "data": {
+          "name": "Name",
+          "host": "Host",
+          "port": "Port",
+          "model": "Model",
+          "poll_interval": "Polling interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the device.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This TESMart device is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TESMart Options",
+        "description": "Update model and polling.",
+        "data": {
+          "model": "Model",
+          "poll_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  }
+}

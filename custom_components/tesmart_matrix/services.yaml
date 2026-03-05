@@ -1,0 +1,191 @@
+set_route:
+  name: Set Route
+  description: Connect an input to one output.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    output:
+      name: Output
+      description: Output port number.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 16
+          mode: box
+    input:
+      name: Input
+      description: Input port number.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 16
+          mode: box
+
+set_all_outputs:
+  name: Set All Outputs
+  description: Connect one input to all outputs.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    input:
+      name: Input
+      description: Input port number.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 16
+          mode: box
+
+mirror_outputs:
+  name: Mirror Outputs
+  description: Set mirrored routing (Output 1->Input 1, Output 2->Input 2, etc).
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+
+set_preset_slot:
+  name: Set Preset Slot
+  description: Set the current preset slot used by load/save preset actions.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    slot:
+      name: Slot
+      description: Preset slot number.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+
+load_preset:
+  name: Load Preset
+  description: Load a preset slot and apply its routing.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    slot:
+      name: Slot
+      description: Optional preset slot; if omitted the configured current slot is used.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+
+save_preset:
+  name: Save Preset
+  description: Save current routing to a preset slot.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    slot:
+      name: Slot
+      description: Optional preset slot; if omitted the configured current slot is used.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+
+set_buzzer_enabled:
+  name: Set Buzzer Enabled
+  description: Enable or disable buzzer sounds.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      required: true
+      selector:
+        boolean:
+
+set_auto_input_detection:
+  name: Set Auto Input Detection
+  description: Enable or disable auto input detection.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      required: true
+      selector:
+        boolean:
+
+set_led_timeout:
+  name: Set LED Timeout
+  description: Set LED timeout option.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    timeout:
+      name: Timeout
+      required: true
+      selector:
+        select:
+          options:
+            - "Off"
+            - "10s"
+            - "30s"
+
+set_fan_mode:
+  name: Set Fan Mode
+  description: Set fan mode option.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional config entry ID when multiple TESMart devices are configured.
+      required: false
+      selector:
+        text:
+    mode:
+      name: Mode
+      required: true
+      selector:
+        select:
+          options:
+            - "Auto"
+            - "Low"
+            - "High"
