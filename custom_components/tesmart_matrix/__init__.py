@@ -11,7 +11,12 @@ import homeassistant.helpers.config_validation as cv
 from .const import DOMAIN
 from .coordinator import TesmartLanCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SELECT, Platform.SWITCH, Platform.BUTTON]
+PLATFORMS: list[Platform] = [
+    Platform.SELECT,
+    Platform.SWITCH,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
+]
 _SERVICES_REGISTERED = "__services_registered"
 _ENTRY_ID = "entry_id"
 
