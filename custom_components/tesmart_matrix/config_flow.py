@@ -10,7 +10,9 @@ from homeassistant.helpers import selector
 
 from .client import TesmartLanClient, TesmartLanClientCommunicationError, TesmartLanClientError
 from .const import (
+    CONF_INPUT_NAMES,
     CONF_MODEL,
+    CONF_OUTPUT_NAMES,
     CONF_POLL_INTERVAL,
     DEFAULT_MODEL,
     DEFAULT_POLL_INTERVAL,
@@ -86,6 +88,36 @@ def _options_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
     )
 
 
+def _get_model_dimensions(config_entry: config_entries.ConfigEntry) -> tuple[int, int]:
+    """Get input and output counts for the configured model."""
+    model = str(config_entry.options.get(CONF_MODEL, config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)))
+    return SUPPORTED_MODELS.get(model, SUPPORTED_MODELS[DEFAULT_MODEL])
+
+
+def _naming_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
+    """Schema for user-defined input and output labels."""
+    input_count, output_count = _get_model_dimensions(config_entry)
+    input_names: dict[str, str] = config_entry.options.get(CONF_INPUT_NAMES, {})
+    output_names: dict[str, str] = config_entry.options.get(CONF_OUTPUT_NAMES, {})
+
+    schema: dict[vol.Marker, selector.TextSelector] = {}
+    for input_num in range(1, input_count + 1):
+        schema[
+            vol.Optional(
+                f"input_{input_num}",
+                default=input_names.get(str(input_num), f"Input {input_num}"),
+            )
+        ] = selector.TextSelector()
+    for output_num in range(1, output_count + 1):
+        schema[
+            vol.Optional(
+                f"output_{output_num}",
+                default=output_names.get(str(output_num), f"Output {output_num}"),
+            )
+        ] = selector.TextSelector()
+    return vol.Schema(schema)
+
+
 class TesmartLanConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for TESMart LAN."""
 
@@ -126,13 +158,69 @@ class TesmartLanOptionsFlow(config_entries.OptionsFlow):
     """Handle TESMart options flow."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        """Manage options."""
+        """Show the options menu."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["settings", "naming"],
+        )
+
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None):
+        """Manage device settings."""
         if user_input is not None:
             user_input[CONF_MODEL] = str(user_input[CONF_MODEL])
             user_input[CONF_POLL_INTERVAL] = int(user_input[CONF_POLL_INTERVAL])
+            user_input[CONF_INPUT_NAMES] = dict(self.config_entry.options.get(CONF_INPUT_NAMES, {}))
+            user_input[CONF_OUTPUT_NAMES] = dict(self.config_entry.options.get(CONF_OUTPUT_NAMES, {}))
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=_options_schema(self.config_entry),
+        )
+
+    async def async_step_naming(self, user_input: dict[str, Any] | None = None):
+        """Manage logical labels for inputs and outputs."""
+        if user_input is not None:
+            input_names: dict[str, str] = {}
+            output_names: dict[str, str] = {}
+
+            for key, value in user_input.items():
+                if not isinstance(value, str):
+                    continue
+                normalized = value.strip()
+                if not normalized:
+                    continue
+                if key.startswith("input_"):
+                    input_names[key.split("_", 1)[1]] = normalized
+                elif key.startswith("output_"):
+                    output_names[key.split("_", 1)[1]] = normalized
+
+            if len(set(input_names.values())) != len(input_names):
+                return self.async_show_form(
+                    step_id="naming",
+                    data_schema=_naming_schema(self.config_entry),
+                    errors={"base": "duplicate_input_names"},
+                )
+
+            data = {
+                CONF_MODEL: str(
+                    self.config_entry.options.get(
+                        CONF_MODEL,
+                        self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL),
+                    )
+                ),
+                CONF_POLL_INTERVAL: int(
+                    self.config_entry.options.get(
+                        CONF_POLL_INTERVAL,
+                        self.config_entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
+                    )
+                ),
+                CONF_INPUT_NAMES: input_names,
+                CONF_OUTPUT_NAMES: output_names,
+            }
+            return self.async_create_entry(title="", data=data)
+
+        return self.async_show_form(
+            step_id="naming",
+            data_schema=_naming_schema(self.config_entry),
         )

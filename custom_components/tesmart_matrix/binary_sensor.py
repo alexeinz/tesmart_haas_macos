@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_MODEL, DATA_ROUTES, DEFAULT_MODEL, DOMAIN, SUPPORTED_MODELS
 from .coordinator import TesmartLanCoordinator
+from .name_helper import get_input_name, get_output_name
 
 
 async def async_setup_entry(
@@ -65,7 +66,7 @@ class TesmartInputActiveBinarySensor(TesmartBaseBinarySensor):
         """Initialize input status binary sensor."""
         super().__init__(coordinator, entry)
         self._input_number = input_number
-        self._attr_name = f"Input {input_number} Active"
+        self._attr_name = f"{get_input_name(entry, input_number)} Active"
         self._attr_unique_id = f"{entry.entry_id}_input_{input_number}_active"
         self._attr_icon = "mdi:video-input-component"
 
@@ -89,7 +90,7 @@ class TesmartOutputRoutedBinarySensor(TesmartBaseBinarySensor):
         """Initialize output status binary sensor."""
         super().__init__(coordinator, entry)
         self._output_number = output_number
-        self._attr_name = f"Output {output_number} Routed"
+        self._attr_name = f"{get_output_name(entry, output_number)} Routed"
         self._attr_unique_id = f"{entry.entry_id}_output_{output_number}_routed"
         self._attr_icon = "mdi:video-switch"
 
