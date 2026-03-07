@@ -6,7 +6,7 @@ Custom Home Assistant integration for TESMart LAN matrix switches over TCP.
 ## Metadata
 
 - Domain: `tesmart_matrix`
-- Version: `1.6.1`
+- Version: `1.6.2`
 - IoT class: `local_polling`
 - Config flow: enabled
 
