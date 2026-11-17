@@ -25,7 +25,6 @@ MIN_POLL_INTERVAL = 1
 MAX_POLL_INTERVAL = 300
 
 DATA_ROUTES = "routes"
-DATA_AVAILABLE = "available"
 DATA_SETTINGS = "settings"
 
 SETTING_BUZZER_ENABLED = "buzzer_enabled"

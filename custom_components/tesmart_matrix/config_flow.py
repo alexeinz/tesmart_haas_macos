@@ -130,6 +130,9 @@ class TesmartLanConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = user_input[CONF_HOST]
             port = int(user_input[CONF_PORT])
 
+            await self.async_set_unique_id(f"{host}:{port}")
+            self._abort_if_unique_id_configured()
+
             try:
                 client = TesmartLanClient(host=host, port=port)
                 await client.get_routes()
@@ -142,8 +145,6 @@ class TesmartLanConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_PORT] = port
                 user_input[CONF_MODEL] = str(user_input[CONF_MODEL])
                 user_input[CONF_POLL_INTERVAL] = int(user_input[CONF_POLL_INTERVAL])
-                await self.async_set_unique_id(f"{host}:{port}")
-                self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=_user_schema(user_input), errors=errors)
