@@ -73,6 +73,30 @@ Available under domain `tesmart_matrix`:
 - `set_led_timeout` (`timeout`, optional `entry_id`)
 - `set_fan_mode` (`mode`, optional `entry_id`)
 
+## macOS app
+
+A native SwiftUI app in `macos/TesmartMatrix` controls the same matrix without Home Assistant (macOS 13+).
+
+- Routing grid (8x8 or 16x16), set-all-outputs, mirror, presets 1-8 load/save, buzzer mute
+- LAN discovery of matrices on the local /24 subnets, with optional MAC filter (full MAC or vendor prefix)
+- Editable names for inputs and outputs, stored locally
+- Pull config: saves the live routing, settings and names to a JSON file; Import loads settings and names back (routes are never sent to the device)
+
+Download `TesmartMatrix-macOS.zip` from the [Releases](https://github.com/alexeinz/tesmart_haas_macos/releases) page. The app is ad-hoc signed, not notarized: on first launch right-click it and choose Open.
+
+Build from source:
+
+```bash
+cd macos/TesmartMatrix
+./build_app.sh --open    # builds dist/TesmartMatrix.app
+```
+
+Requires the Swift toolchain (Xcode or Command Line Tools). The device accepts one TCP connection at a time, so close the app (or disable auto-refresh) if Home Assistant cannot connect.
+
+## Releases
+
+Pushing a tag `vX.Y.Z` (matching the version in `manifest.json`) runs the release workflow, which tests the integration, builds the macOS app and publishes a GitHub release with `tesmart_matrix.zip` and `TesmartMatrix-macOS.zip`.
+
 ## Notes
 
 - Uses TESMart matrix ASCII commands (for example `MT00SW..` and `MT00RD0000NT`).
@@ -81,5 +105,5 @@ Available under domain `tesmart_matrix`:
 
 ## Links
 
-- Documentation: https://gitlab-jp.ispace-inc.com/ground/tesmart_control
-- Issues: https://gitlab-jp.ispace-inc.com/ground/tesmart_control
+- Repository: https://github.com/alexeinz/tesmart_haas_macos
+- Issues: https://github.com/alexeinz/tesmart_haas_macos/issues
