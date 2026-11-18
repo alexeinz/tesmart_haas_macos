@@ -6,7 +6,7 @@ import re
 
 from .const import LOGGER
 
-_ROUTE_PATTERN = re.compile(r"O([1-9A-G]|1[0-6])I([1-9A-G]|1[0-6])")
+_ROUTE_PATTERN = re.compile(r"O(1[0-6]|[1-9A-G])I(1[0-6]|[1-9A-G])")
 
 
 class TesmartLanClientError(Exception):
@@ -25,17 +25,29 @@ class TesmartLanClient:
         self._host = host
         self._port = port
         self._timeout = timeout
+        # The device handles one connection at a time; serialize all access.
+        self._lock = asyncio.Lock()
 
-    async def get_routes(self) -> dict[int, int]:
-        """Read full output->input route map."""
+    async def get_routes(self, expected_outputs: int | None = None) -> dict[int, int]:
+        """Read full output->input route map.
+
+        When ``expected_outputs`` is given, partial answers (fewer outputs than
+        expected) are retried instead of being returned.
+        """
         # Some devices return route data in partial chunks; retry a few times
         # before failing the config flow or coordinator refresh.
+        routes: dict[int, int] = {}
         for _attempt in range(3):
             response = await self._send_command("MT00RD0000NT", expect_response=True)
             routes = self._parse_routes(response)
-            if routes:
+            if routes and (expected_outputs is None or len(routes) >= expected_outputs):
                 return routes
             await asyncio.sleep(0.2)
+        if routes:
+            raise TesmartLanClientError(
+                f"Incomplete route data from {self._host}:{self._port}: "
+                f"got {len(routes)} of {expected_outputs} outputs"
+            )
         raise TesmartLanClientError(
             f"No route data received from {self._host}:{self._port}"
         )
@@ -95,59 +107,60 @@ class TesmartLanClient:
 
     async def _send_command(self, command: str, expect_response: bool = False) -> str:
         """Send one command and optionally read response."""
-        writer: asyncio.StreamWriter | None = None
-        try:
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(self._host, self._port),
-                timeout=self._timeout,
-            )
-            writer.write(f"{command}\r\n".encode())
-            await asyncio.wait_for(writer.drain(), timeout=self._timeout)
-
-            response = ""
-            if expect_response:
-                chunks: list[bytes] = []
-                while True:
-                    try:
-                        data = await asyncio.wait_for(reader.read(4096), timeout=self._timeout)
-                    except TimeoutError:
-                        # Device may keep socket open; treat read timeout as end of response.
-                        break
-                    if not data:
-                        break
-                    chunks.append(data)
-                    # Typical route payload contains END; stop early once seen.
-                    if b"END" in b"".join(chunks):
-                        break
-                response = b"".join(chunks).decode(errors="ignore")
-            return response
-        except (TimeoutError, OSError) as err:
-            raise TesmartLanClientCommunicationError(
-                f"Failed talking to {self._host}:{self._port}: {err}"
-            ) from err
-        finally:
-            if writer is not None:
-                writer.close()
-                await writer.wait_closed()
+        return await self._transact(f"{command}\r\n".encode(), expect_response)
 
     async def _send_hex(self, payload: bytes) -> None:
         """Send raw hex payload to the device."""
-        writer: asyncio.StreamWriter | None = None
+        await self._transact(payload, False)
+
+    async def _transact(self, payload: bytes, expect_response: bool) -> str:
+        """Open a connection, send payload, optionally read the reply."""
+        async with self._lock:
+            writer: asyncio.StreamWriter | None = None
+            try:
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(self._host, self._port),
+                    timeout=self._timeout,
+                )
+                writer.write(payload)
+                await asyncio.wait_for(writer.drain(), timeout=self._timeout)
+                if not expect_response:
+                    return ""
+                return await self._read_response(reader)
+            except (TimeoutError, OSError) as err:
+                raise TesmartLanClientCommunicationError(
+                    f"Failed talking to {self._host}:{self._port}: {err}"
+                ) from err
+            finally:
+                await self._close(writer)
+
+    async def _read_response(self, reader: asyncio.StreamReader) -> str:
+        """Read until END marker, EOF, or read timeout."""
+        buffer = b""
+        while True:
+            try:
+                data = await asyncio.wait_for(reader.read(4096), timeout=self._timeout)
+            except TimeoutError:
+                # Device may keep socket open; treat read timeout as end of response.
+                break
+            if not data:
+                break
+            buffer += data
+            # Typical route payload contains END; stop early once seen.
+            if b"END" in buffer:
+                break
+        return buffer.decode(errors="ignore")
+
+    @staticmethod
+    async def _close(writer: asyncio.StreamWriter | None) -> None:
+        """Close a writer, ignoring errors raised during teardown."""
+        if writer is None:
+            return
+        writer.close()
         try:
-            _, writer = await asyncio.wait_for(
-                asyncio.open_connection(self._host, self._port),
-                timeout=self._timeout,
-            )
-            writer.write(payload)
-            await asyncio.wait_for(writer.drain(), timeout=self._timeout)
-        except (TimeoutError, OSError) as err:
-            raise TesmartLanClientCommunicationError(
-                f"Failed talking to {self._host}:{self._port}: {err}"
-            ) from err
-        finally:
-            if writer is not None:
-                writer.close()
-                await writer.wait_closed()
+            await asyncio.wait_for(writer.wait_closed(), timeout=2)
+        except (TimeoutError, OSError):
+            LOGGER.debug("Error while closing connection", exc_info=True)
 
     @staticmethod
     def _parse_routes(raw: str) -> dict[int, int]:

@@ -11,8 +11,12 @@ import homeassistant.helpers.config_validation as cv
 from .const import DOMAIN
 from .coordinator import TesmartLanCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SELECT, Platform.SWITCH, Platform.BUTTON]
-_SERVICES_REGISTERED = "__services_registered"
+PLATFORMS: list[Platform] = [
+    Platform.SELECT,
+    Platform.SWITCH,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
+]
 _ENTRY_ID = "entry_id"
 
 SERVICE_SET_ROUTE = "set_route"
@@ -25,6 +29,19 @@ SERVICE_SET_BUZZER_ENABLED = "set_buzzer_enabled"
 SERVICE_SET_AUTO_INPUT_DETECTION = "set_auto_input_detection"
 SERVICE_SET_LED_TIMEOUT = "set_led_timeout"
 SERVICE_SET_FAN_MODE = "set_fan_mode"
+
+_ALL_SERVICES = (
+    SERVICE_SET_ROUTE,
+    SERVICE_SET_ALL_OUTPUTS,
+    SERVICE_MIRROR_OUTPUTS,
+    SERVICE_SET_PRESET_SLOT,
+    SERVICE_LOAD_PRESET,
+    SERVICE_SAVE_PRESET,
+    SERVICE_SET_BUZZER_ENABLED,
+    SERVICE_SET_AUTO_INPUT_DETECTION,
+    SERVICE_SET_LED_TIMEOUT,
+    SERVICE_SET_FAN_MODE,
+)
 
 SERVICE_SCHEMA_ROUTE = vol.Schema(
     {
@@ -73,9 +90,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
-    if not hass.data[DOMAIN].get(_SERVICES_REGISTERED):
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_ROUTE):
         _register_services(hass)
-        hass.data[DOMAIN][_SERVICES_REGISTERED] = True
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
@@ -87,6 +103,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        if not hass.data[DOMAIN]:
+            for service in _ALL_SERVICES:
+                hass.services.async_remove(DOMAIN, service)
     return unloaded
 
 
@@ -101,7 +120,7 @@ def _get_coordinator(hass: HomeAssistant, entry_id: str | None) -> TesmartLanCoo
     coordinators = {
         key: value
         for key, value in domain_data.items()
-        if key != _SERVICES_REGISTERED and isinstance(value, TesmartLanCoordinator)
+        if isinstance(value, TesmartLanCoordinator)
     }
     if not coordinators:
         raise ServiceValidationError("No TESMart entries are currently loaded.")

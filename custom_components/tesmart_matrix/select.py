@@ -20,6 +20,7 @@ from .const import (
     SUPPORTED_MODELS,
 )
 from .coordinator import TesmartLanCoordinator
+from .name_helper import get_input_name, get_output_name
 
 
 async def async_setup_entry(
@@ -75,9 +76,13 @@ class TesmartOutputSelect(TesmartBaseSelect):
         """Initialize output route selector."""
         super().__init__(coordinator, entry)
         self._output_number = output_number
-        self._attr_name = f"Output {output_number} Source"
+        self._attr_name = f"{get_output_name(entry, output_number)} Source"
         self._attr_unique_id = f"{entry.entry_id}_output_{output_number}"
-        self._attr_options = [str(item) for item in range(1, input_count + 1)]
+        self._input_name_to_id = {
+            get_input_name(entry, input_num): input_num for input_num in range(1, input_count + 1)
+        }
+        self._input_id_to_name = {input_num: name for name, input_num in self._input_name_to_id.items()}
+        self._attr_options = list(self._input_name_to_id)
 
     @property
     def current_option(self) -> str | None:
@@ -85,11 +90,13 @@ class TesmartOutputSelect(TesmartBaseSelect):
         data = self.coordinator.data or {}
         routes: dict[int, int] = data.get(DATA_ROUTES, {})
         selected = routes.get(self._output_number)
-        return str(selected) if selected else None
+        if selected is None:
+            return None
+        return self._input_id_to_name.get(selected, str(selected))
 
     async def async_select_option(self, option: str) -> None:
         """Set output route."""
-        await self.coordinator.async_set_route(self._output_number, int(option))
+        await self.coordinator.async_set_route(self._output_number, self._input_name_to_id[option])
 
 
 class TesmartAllOutputsSelect(TesmartBaseSelect):
@@ -102,7 +109,11 @@ class TesmartAllOutputsSelect(TesmartBaseSelect):
         super().__init__(coordinator, entry)
         self._attr_name = "All Outputs Source"
         self._attr_unique_id = f"{entry.entry_id}_all_outputs"
-        self._attr_options = [str(item) for item in range(1, input_count + 1)]
+        self._input_name_to_id = {
+            get_input_name(entry, input_num): input_num for input_num in range(1, input_count + 1)
+        }
+        self._input_id_to_name = {input_num: name for name, input_num in self._input_name_to_id.items()}
+        self._attr_options = list(self._input_name_to_id)
 
     @property
     def current_option(self) -> str | None:
@@ -115,11 +126,12 @@ class TesmartAllOutputsSelect(TesmartBaseSelect):
         distinct_inputs = {input_port for input_port in routes.values()}
         if len(distinct_inputs) != 1:
             return None
-        return str(next(iter(distinct_inputs)))
+        selected = next(iter(distinct_inputs))
+        return self._input_id_to_name.get(selected, str(selected))
 
     async def async_select_option(self, option: str) -> None:
         """Route all outputs to selected input."""
-        await self.coordinator.async_set_all_outputs(int(option))
+        await self.coordinator.async_set_all_outputs(self._input_name_to_id[option])
 
 
 class TesmartLedTimeoutSelect(TesmartBaseSelect):

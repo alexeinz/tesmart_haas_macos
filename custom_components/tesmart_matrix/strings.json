@@ -22,14 +22,29 @@
     }
   },
   "options": {
+    "error": {
+      "duplicate_input_names": "Input names must be unique."
+    },
     "step": {
       "init": {
+        "title": "TESMart Options",
+        "menu_options": {
+          "settings": "Device Settings",
+          "naming": "Names"
+        }
+      },
+      "settings": {
         "title": "TESMart Options",
         "description": "Update model and polling.",
         "data": {
           "model": "Model",
           "poll_interval": "Polling interval (seconds)"
         }
+      },
+      "naming": {
+        "title": "Input and Output Names",
+        "description": "Set human-readable labels for each input source and output destination.",
+        "data": {}
       }
     }
   }

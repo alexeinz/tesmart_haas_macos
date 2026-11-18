@@ -9,6 +9,8 @@ NAME = "TESMart LAN Matrix"
 
 CONF_POLL_INTERVAL = "poll_interval"
 CONF_MODEL = "model"
+CONF_INPUT_NAMES = "input_names"
+CONF_OUTPUT_NAMES = "output_names"
 
 DEFAULT_PORT = 5000
 DEFAULT_MODEL = "8x16"
@@ -23,7 +25,6 @@ MIN_POLL_INTERVAL = 1
 MAX_POLL_INTERVAL = 300
 
 DATA_ROUTES = "routes"
-DATA_AVAILABLE = "available"
 DATA_SETTINGS = "settings"
 
 SETTING_BUZZER_ENABLED = "buzzer_enabled"

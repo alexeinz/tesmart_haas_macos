@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  haas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests
+        run: python -m unittest discover -s tests
+      - name: Check manifest version matches tag
+        run: |
+          v=$(python -c "import json;print(json.load(open('custom_components/tesmart_matrix/manifest.json'))['version'])")
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "manifest $v != tag $GITHUB_REF_NAME"; exit 1; }
+      - name: Package integration
+        run: |
+          cd custom_components/tesmart_matrix
+          zip -r "$GITHUB_WORKSPACE/tesmart_matrix.zip" . -x '*__pycache__*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haas
+          path: tesmart_matrix.zip
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app
+        working-directory: macos/TesmartMatrix
+        run: VERSION="${GITHUB_REF_NAME#v}" ./build_app.sh
+      - name: Package app
+        working-directory: macos/TesmartMatrix/dist
+        run: ditto -c -k --keepParent TesmartMatrix.app "$GITHUB_WORKSPACE/TesmartMatrix-macOS.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: TesmartMatrix-macOS.zip
+
+  release:
+    needs: [haas, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            tesmart_matrix.zip
+            TesmartMatrix-macOS.zip
